@@ -1,0 +1,50 @@
+services:
+  db:
+    image: bitnami/postgresql:17.0.0
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRESQL_USER: ${POSTGRES_USER}
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: ${POSTGRES_DB}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s # added start period to give the database time to initiliaze
+    networks:
+      - airflow_network
+
+  backup:
+    image: bitnami/postgresql:17.0.0
+    container_name: postgres_backup
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    entrypoint: >
+      /bin/sh -c ' mkdir -p /backups && while true; do
+        pg_dump --dbname=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB} > /backups/db_backup_$(date +'%Y%m%d%H%M%S').sql &&
+        sleep 86400;
+      done'
+    environment:
+      POSTGRESQL_USER: ${POSTGRES_USER}
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - airflow_network
+
+volumes:
+  db_data:
+
+
+networks:
+  airflow_network:
+    external: true
