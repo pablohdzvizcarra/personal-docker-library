@@ -1,5 +1,7 @@
 # 🐳 Personal Docker Configurations
 
+![GitHub last commit](https://img.shields.io/github/last-commit/pablohdzvizcarra/personal-docker-library)
+
 A curated collection of customized Dockerfiles and container configurations for various applications and services.
 
 ## 🗒️ Overview
